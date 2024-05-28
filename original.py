@@ -123,8 +123,9 @@ def train():
             filename = input()
             with open(os.path.join("examples", filename), "w") as dump:
                 dump.write(base64data)
-        except Exception:
+        except Exception as error:
             print('EXCEPTION')
+            print(error.with_traceback())
         finally:
             # server returns new page with captcha as response
             resp = requests.post(f"{SERVER}/submit", data={"captcha": ""})
@@ -138,7 +139,9 @@ def test():
     resp = requests.get(f"{SERVER}")
 
     i = 0
+    steps = 0
     while i != 100:
+        steps += 1
         print(f"Processing: {i}")
         try:
             base64data = extract_base64_from_response(resp)
@@ -176,6 +179,8 @@ def test():
         flag_stop = resp.text.find("}")
         if flag_start != -1 and flag_stop != -1:
             print(resp.text[flag_start:flag_stop + 1])
+
+    print(i / steps)
 
 
 # train()
