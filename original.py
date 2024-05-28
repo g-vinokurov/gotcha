@@ -7,7 +7,6 @@ from PIL import Image
 import requests
 import os
 
-PRECISION = 0.98
 SERVER = 'http://localhost:5003'
 
 # You need solve 100 captcha in 120 seconds
@@ -71,18 +70,18 @@ def cmp(letter, abc):
         # count number of equal pixels
         count = sum(1 if i1[i] == i2[i] else 0 for i in range(common_length))
 
-        # if key is quite similar to input letter it will be accepted
-        # in possible_keys we save decoded symbol
-        if count / common_length > PRECISION:
-            possible_keys.add(abc[key])
-    # there can be more than one decoded symbol
-    possible_keys = list(possible_keys)
+        # we save key and percent of equal pixels
+        # there can be more than one decoded symbol
+        activation = count / common_length
+        possible_keys.add((abc[key], activation))
+
+    # we sort symbols by descending order by their percents
+    possible_keys = sorted(possible_keys, key=lambda x: x[1], reverse=True)
+    print(possible_keys)
 
     if possible_keys:
-        # print("Keys: ", possible_keys)
-
-        # we choose first decoded symbol
-        return possible_keys[0]
+        # we choose the most likely symbol
+        return possible_keys[0][0]
     return None
 
 
@@ -151,10 +150,8 @@ def test():
             # compare current letters with training set
             letters = "".join([cmp(x, abc) for x in letters])
         except Exception:
-            print("EXCEPTION")
-            # ask new page from server
-            resp = requests.get(f"{SERVER}")
-            continue
+            print("\u001b[31m FAILURE \033[0m")
+            return
 
         # send cracked captcha to server
         resp = requests.post(
@@ -165,14 +162,17 @@ def test():
 
         # check on success
         ok = resp.text.find('<div class="alert alert-success" role="alert">')
-        # print("SUCCESS" if ok != -1 else "ERROR")
-
         if ok != -1:
             i += 1
-            score_pos = resp.text.find("Score: ")
-            print(resp.text[score_pos:score_pos+10])
 
-        flag_start = resp.text.find("GreyCTF{")
+            print("\u001b[32m SUCCESS \033[0m")
+            score_start = resp.text.find("Score: ")
+            score_legth = resp.text[score_start:].find("<")
+            print(resp.text[score_start:score_start + score_legth])
+        else:
+            print("\u001b[33m MISMATCH \033[0m")
+
+        flag_start = resp.text.find("grey{")
         flag_stop = resp.text.find("}")
         if flag_start != -1 and flag_stop != -1:
             print(resp.text[flag_start:flag_stop + 1])
