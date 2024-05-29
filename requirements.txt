@@ -3,3 +3,4 @@ setuptools==70.0.0
 wheel==0.43.0
 pillow==10.3.0
 requests==2.32.2
+numpy==1.26.4
